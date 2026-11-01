@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>首页图管理 · RAILLOG</title>
+<style>
+  :root {
+    --green: #0F6E56; --green-soft: #E1F5EE; --lime: #C1FF37;
+    --ink: #1E1E1C; --ink-2: #5F5E5A; --ink-3: #9A988F;
+    --line: rgba(0,0,0,.08); --bg: #F6F5F2; --card: #fff; --red: #A32D2D;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--ink); font-size: 15px; line-height: 1.6;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 24px 16px 64px; }
+  header.top { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .logo { width: 38px; height: 38px; border-radius: 11px; background: var(--ink); color: var(--lime);
+          display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; }
+  .top h1 { font-size: 17px; margin: 0; font-weight: 700; }
+  .top p { margin: 2px 0 0; font-size: 12px; color: var(--ink-3); }
+  .card { background: var(--card); border-radius: 18px; padding: 18px; margin-bottom: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .card h2 { font-size: 15px; margin: 0 0 6px; font-weight: 700; }
+  .desc { font-size: 12.5px; color: var(--ink-3); line-height: 1.7; margin: 0 0 14px; }
+  label.f { display: block; font-size: 12.5px; color: var(--ink-2); margin-bottom: 6px; }
+  input[type=text], input[type=password] {
+    width: 100%; height: 42px; border: 1px solid var(--line); border-radius: 11px; padding: 0 12px;
+    font-size: 14px; color: var(--ink); background: #FBFAF7; outline: none; font-family: inherit;
+  }
+  input:focus { border-color: var(--green); background: #fff; }
+  button { font-family: inherit; cursor: pointer; border: none; }
+  .btn { height: 44px; border-radius: 12px; background: var(--green); color: #fff; font-size: 15px; font-weight: 600; width: 100%; }
+  .btn:active { opacity: .86; }
+  .btn[disabled] { opacity: .5; cursor: default; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .muted { color: var(--ink-3); font-size: 12px; }
+  .err { color: var(--red); font-size: 13px; margin-top: 10px; word-break: break-all; }
+  .drop { border: 1.5px dashed rgba(15,110,86,.35); border-radius: 16px; background: #F7FBF8; padding: 26px 16px; text-align: center; transition: .15s; cursor: pointer; }
+  .drop.hover { background: var(--green-soft); border-color: var(--green); }
+  .drop .big { font-size: 15px; font-weight: 600; color: var(--green); }
+  .drop .small { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
+           background: rgba(30,30,28,.94); color: #fff; font-size: 13px; padding: 10px 18px; border-radius: 999px;
+           opacity: 0; pointer-events: none; transition: .22s; max-width: 84vw; text-align: center; z-index: 99; }
+  .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .item { display: flex; gap: 14px; padding: 14px 0; border-top: 1px solid var(--line); }
+  .item:first-of-type { border-top: none; }
+  .thumb { width: 92px; height: 101px; border-radius: 12px; object-fit: cover; background: #EEE; flex: 0 0 auto; }
+  .thumb.off { filter: grayscale(1); opacity: .45; }
+  .body { flex: 1; min-width: 0; }
+  .line1 { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; }
+  .badge { font-size: 11px; font-weight: 500; padding: 1px 8px; border-radius: 999px; background: var(--green-soft); color: var(--green); }
+  .badge.off { background: #F1EFE8; color: var(--ink-3); }
+  .ops { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .op { font-size: 12px; padding: 4px 11px; border-radius: 999px; background: #F3F8F5; color: var(--green); }
+  .op.danger { background: #FCEBEB; color: var(--red); }
+  .op:disabled { opacity: .4; }
+  .linkrow { margin-top: 10px; }
+  .linkrow .row input { height: 36px; font-size: 13px; }
+  .save { height: 36px; padding: 0 14px; border-radius: 10px; background: var(--green); color: #fff; font-size: 13px; flex: 0 0 auto; }
+  .switcher { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+  .switcher input { width: 16px; height: 16px; accent-color: var(--green); }
+  .hidden { display: none !important; }
+  .foot { text-align: center; font-size: 11.5px; color: var(--ink-3); margin-top: 26px; line-height: 1.8; }
+  .boot { text-align: center; color: var(--ink-3); font-size: 13px; padding: 40px 0; }
+  @media (max-width: 420px) { .thumb { width: 76px; height: 84px; } .wrap { padding: 18px 12px 56px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="logo">R</div>
+    <div>
+      <h1>首页图管理</h1>
+      <p>Dreamrail 小程序 · 轮播 banner 后台上传</p>
+    </div>
+  </header>
+
+  <div id="boot" class="card boot">正在连接云开发…</div>
+
+  <section id="loginView" class="card hidden">
+    <h2>输入管理口令</h2>
+    <p class="desc">和小程序管理端同一个口令（数据库 settings/admin）。验证通过后本页会记住口令。</p>
+    <label class="f">管理口令</label>
+    <input id="pwd" type="password" placeholder="默认 CHANGE_ME_2026" autocomplete="current-password" />
+    <div style="height:14px"></div>
+    <button class="btn" id="loginBtn">进入后台</button>
+    <div class="err hidden" id="loginErr"></div>
+  </section>
+
+  <main id="mainView" class="hidden">
+    <section class="card">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div>
+          <h2>上传新图</h2>
+          <p class="desc" style="margin-bottom:0">建议 880×964（宽高比约 0.91:1）。会自动压到 880 宽并转 JPG。</p>
+        </div>
+        <button class="op" id="logoutBtn">退出</button>
+      </div>
+      <div style="height:14px"></div>
+      <div class="drop" id="drop">
+        <div class="big">点击选择图片，或把图片拖到这里</div>
+        <div class="small">支持一次多选 · JPG / PNG / WEBP</div>
+      </div>
+      <input id="fileInput" type="file" accept="image/*" multiple class="hidden" />
+      <div class="muted" id="hint" style="margin-top:10px">当前 0 / 10 张</div>
+    </section>
+
+    <section class="card">
+      <h2>轮播顺序</h2>
+      <p class="desc">从上到下就是首页播放顺序，第一张为初始页。停用的图不出现在首页。改链接后点「保存」。</p>
+      <div id="list"></div>
+      <div class="muted hidden" id="empty" style="padding:18px 0;text-align:center">还没有上传过图片，首页现在显示内置的 3 张默认图</div>
+    </section>
+
+    <div class="foot">图片存在云存储，记录在 banners 集合 · 上传后首页下拉刷新即可看到</div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="./vendor/cloudbase.full.js"></script>
+<script>
+(function () {
+  var ENV_ID = 'cloud1-d7ggd3jy76c8096f0';
+  var KEY = 'raillog_banner_pwd';
+  var pwd = localStorage.getItem(KEY) || '';
+  var app = null, list = [], maxCount = 10, busy = false;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var boot = $('boot'), loginView = $('loginView'), mainView = $('mainView');
+  var toastEl = $('toast'), toastTimer = null;
+
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('on'); }, 2400);
+  }
+
+  function call(action, extra) {
+    return app.callFunction({
+      name: 'admin',
+      data: Object.assign({ action: action, password: pwd }, extra || {})
+    }).then(function (res) {
+      return (res && res.result) || { ok: false, msg: '云函数无返回' };
+    });
+  }
+
+  /* ---------- 启动：匿名登录 ---------- */
+  function bootUp() {
+    if (typeof cloudbase === 'undefined') {
+      boot.textContent = 'SDK 没加载成功，请检查 vendor/cloudbase.full.js 是否存在';
+      return;
+    }
+    try {
+      app = cloudbase.init({ env: ENV_ID });
+    } catch (e) {
+      boot.textContent = '初始化失败：' + (e.message || e);
+      return;
+    }
+    var auth = app.auth({ persistence: 'local' });
+    auth.anonymousAuthProvider().signIn()
+      .then(function () {
+        boot.classList.add('hidden');
+        loginView.classList.remove('hidden');
+        $('pwd').value = pwd;
+        if (pwd) tryLogin(true);
+      })
+      .catch(function (err) {
+        boot.innerHTML = '匿名登录失败：' + ((err && (err.message || err.errMsg)) || '未知错误') +
+          '<br /><span class="muted">请到云开发控制台 → 设置 → 登录授权，开启「匿名登录」</span>';
+      });
+  }
+
+  /* ---------- 登录 ---------- */
+  function tryLogin(silent) {
+    var v = silent ? pwd : $('pwd').value.trim();
+    if (!v) { showErr('请输入口令'); return; }
+    var btn = $('loginBtn');
+    btn.disabled = true; btn.textContent = '验证中…';
+    $('loginErr').classList.add('hidden');
+    pwd = v;
+    call('login').then(function (r) {
+      if (r.ok) {
+        localStorage.setItem(KEY, v);
+        boot.classList.add('hidden');
+        loginView.classList.add('hidden');
+        mainView.classList.remove('hidden');
+        loadList();
+      } else {
+        pwd = '';
+        showErr(r.msg || '口令不对');
+      }
+    }).catch(function (e) {
+      pwd = '';
+      showErr('调用云函数失败：' + ((e && (e.message || e.errMsg)) || '网络异常'));
+    }).then(function () {
+      btn.disabled = false; btn.textContent = '进入后台';
+    });
+  }
+
+  function showErr(msg) {
+    var el = $('loginErr');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+
+  $('loginBtn').addEventListener('click', function () { tryLogin(false); });
+  $('pwd').addEventListener('keydown', function (e) { if (e.key === 'Enter') tryLogin(false); });
+  $('logoutBtn').addEventListener('click', function () {
+    localStorage.removeItem(KEY);
+    pwd = ''; list = [];
+    mainView.classList.add('hidden');
+    loginView.classList.remove('hidden');
+    $('pwd').value = '';
+  });
+
+  /* ---------- 列表 ---------- */
+  function loadList() {
+    return call('listBanners').then(function (r) {
+      if (!r.ok) { toast(r.msg || '读取失败'); return; }
+      list = (r.list || []).map(function (b) {
+        return { id: b._id, url: b.fileID || b.localPath || '', cloud: !!b.fileID,
+                 link: b.link || '', tab: b.tab === true, enabled: b.enabled !== false };
+      });
+      render();
+    }).catch(function () { toast('网络异常，请刷新重试'); });
+  }
+
+  function render() {
+    var box = $('list');
+    $('hint').textContent = '当前 ' + list.length + ' / ' + maxCount + ' 张';
+    $('empty').classList.toggle('hidden', list.length > 0);
+    box.innerHTML = '';
+
+    list.forEach(function (b, i) {
+      var item = document.createElement('div');
+      item.className = 'item';
+
+      var img = document.createElement('img');
+      img.className = 'thumb' + (b.enabled ? '' : ' off');
+      img.src = b.url; img.loading = 'lazy';
+
+      var body = document.createElement('div');
+      body.className = 'body';
+      var line1 = document.createElement('div');
+      line1.className = 'line1';
+      line1.innerHTML = '<span>第 ' + (i + 1) + ' 张</span><span class="badge ' +
+        (b.enabled ? '' : 'off') + '">' + (b.enabled ? '显示中' : '已停用') + '</span>';
+
+      var ops = document.createElement('div');
+      ops.className = 'ops';
+      ops.appendChild(opBtn('上移', i === 0, function () { move(i, -1); }));
+      ops.appendChild(opBtn('下移', i === list.length - 1, function () { move(i, 1); }));
+      ops.appendChild(opBtn(b.enabled ? '停用' : '启用', false, function () { toggle(b); }));
+      var del = opBtn('删除', false, function () { remove(b); });
+      del.className = 'op danger';
+      ops.appendChild(del);
+
+      var linkRow = document.createElement('div');
+      linkRow.className = 'linkrow';
+      var inner = document.createElement('div');
+      inner.className = 'row';
+      var inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = b.link || '';
+      inp.placeholder = '点击跳转，留空=不跳转，如 /pages/ticket/ticket';
+      var save = document.createElement('button');
+      save.className = 'save'; save.textContent = '保存';
+      save.addEventListener('click', function () { saveLink(b, inp.value, save); });
+      inner.appendChild(inp); inner.appendChild(save);
+      linkRow.appendChild(inner);
+
+      var sw = document.createElement('label');
+      sw.className = 'switcher';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = !!b.tab;
+      cb.addEventListener('change', function () { saveTab(b, cb.checked); });
+      sw.appendChild(cb);
+      sw.appendChild(document.createTextNode('跳转目标是底部 tab 页（如 /pages/store/store）'));
+
+      body.appendChild(line1);
+      body.appendChild(ops);
+      body.appendChild(linkRow);
+      body.appendChild(sw);
+
+      if (!b.cloud) {
+        var tip = document.createElement('div');
+        tip.className = 'muted';
+        tip.style.marginTop = '4px';
+        tip.textContent = '内置默认图，只能停用不能删文件';
+        body.appendChild(tip);
+      }
+
+      item.appendChild(img);
+      item.appendChild(body);
+      box.appendChild(item);
+    });
+  }
+
+  function opBtn(text, disabled, fn) {
+    var b = document.createElement('button');
+    b.className = 'op'; b.textContent = text; b.disabled = !!disabled;
+    b.addEventListener('click', fn);
+    return b;
+  }
+
+  function move(i, dir) {
+    var j = i + dir;
+    if (j < 0 || j >= list.length) return;
+    var t = list[i]; list[i] = list[j]; list[j] = t;
+    render();
+    call('reorderBanners', { ids: list.map(function (b) { return b.id; }) }).then(function (r) {
+      if (!r.ok) { toast(r.msg || '排序保存失败'); loadList(); } else toast('顺序已保存');
+    });
+  }
+
+  function toggle(b) {
+    call('updateBanner', { id: b.id, enabled: !b.enabled }).then(function (r) {
+      if (r.ok) { b.enabled = !b.enabled; render(); toast(b.enabled ? '已启用' : '已停用'); }
+      else toast(r.msg || '操作失败');
+    });
+  }
+
+  function saveLink(b, v, btn) {
+    btn.disabled = true;
+    call('updateBanner', { id: b.id, link: String(v || '').trim() }).then(function (r) {
+      btn.disabled = false;
+      if (r.ok) { b.link = String(v || '').trim(); toast('链接已保存'); }
+      else toast(r.msg || '保存失败');
+    }).catch(function () { btn.disabled = false; toast('网络异常'); });
+  }
+
+  function saveTab(b, checked) {
+    call('updateBanner', { id: b.id, tab: checked }).then(function (r) {
+      if (r.ok) { b.tab = checked; toast(checked ? '已标记 tab 页' : '已取消 tab 页'); }
+      else toast(r.msg || '保存失败');
+    });
+  }
+
+  function remove(b) {
+    if (!confirm('删除第 ' + (list.indexOf(b) + 1) + ' 张？首页立刻不再显示，云存储图片也会删除。')) return;
+    call('deleteBanner', { id: b.id }).then(function (r) {
+      if (r.ok) { toast('已删除'); loadList(); } else toast(r.msg || '删除失败');
+    });
+  }
+
+  /* ---------- 上传 ---------- */
+  var drop = $('drop'), fileInput = $('fileInput');
+  drop.addEventListener('click', function () { fileInput.click(); });
+  drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('hover'); });
+  drop.addEventListener('dragleave', function () { drop.classList.remove('hover'); });
+  drop.addEventListener('drop', function (e) {
+    e.preventDefault(); drop.classList.remove('hover');
+    handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', function () {
+    handleFiles(fileInput.files); fileInput.value = '';
+  });
+
+  function handleFiles(files) {
+    if (!files || !files.length) return;
+    if (busy) { toast('上一张还在上传，请稍等'); return; }
+    var arr = [].slice.call(files).filter(function (f) { return /^image\//.test(f.type); });
+    if (!arr.length) { toast('请选择图片文件'); return; }
+    var room = maxCount - list.length;
+    if (room <= 0) { toast('已有 ' + maxCount + ' 张，请先删掉不用的'); return; }
+    if (arr.length > room) { toast('最多还能传 ' + room + ' 张'); arr = arr.slice(0, room); }
+
+    busy = true;
+    var i = 0;
+    function next() {
+      if (i >= arr.length) { busy = false; loadList().then(function () { toast('全部上传完成'); }); return; }
+      var f = arr[i++];
+      $('hint').textContent = '正在上传 ' + i + ' / ' + arr.length + '：' + f.name;
+      compress(f).then(function (blob) {
+        var ext = '.jpg';
+        var cloudPath = 'banners/' + Date.now() + '-' + Math.floor(Math.random() * 100000) + ext;
+        return app.uploadFile({ cloudPath: cloudPath, fileContent: blob }).then(function (up) {
+          return call('addBanner', { fileID: up.fileID });
+        }).then(function (r) {
+          if (!r.ok) toast(r.msg || '保存记录失败');
+        });
+      }).catch(function (e) {
+        toast('上传失败：' + ((e && (e.message || e.errMsg)) || '未知错误'));
+      }).then(function () {
+        setTimeout(next, 150);
+      });
+    }
+    next();
+  }
+
+  function compress(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight;
+        var scale = Math.min(1, 880 / Math.max(w, h * 0.91));
+        var cw = Math.round(w * scale), ch = Math.round(h * scale);
+        var c = document.createElement('canvas');
+        c.width = cw; c.height = ch;
+        var ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cw, ch);
+        ctx.drawImage(img, 0, 0, cw, ch);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (blob) { blob ? resolve(blob) : reject(new Error('编码失败')); }, 'image/jpeg', 0.86);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('图片解码失败')); };
+      img.src = url;
+    });
+  }
+
+  bootUp();
+})();
+</script>
+</body>
+</html>
