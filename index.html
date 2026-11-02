@@ -150,7 +150,7 @@
     });
   }
 
-  /* ---------- 启动：匿名登录 ---------- */
+  /* ---------- 启动：未登录模式（控制台已开「未登录用户访问云资源」） ---------- */
   function bootUp() {
     if (typeof cloudbase === 'undefined') {
       boot.textContent = 'SDK 没加载成功，请检查 vendor/cloudbase.full.js 是否存在';
@@ -162,18 +162,11 @@
       boot.textContent = '初始化失败：' + (e.message || e);
       return;
     }
-    var auth = app.auth({ persistence: 'local' });
-    auth.anonymousAuthProvider().signIn()
-      .then(function () {
-        boot.classList.add('hidden');
-        loginView.classList.remove('hidden');
-        $('pwd').value = pwd;
-        if (pwd) tryLogin(true);
-      })
-      .catch(function (err) {
-        boot.innerHTML = '匿名登录失败：' + ((err && (err.message || err.errMsg)) || '未知错误') +
-          '<br /><span class="muted">请到云开发控制台 → 设置 → 登录授权，开启「匿名登录」</span>';
-      });
+    // 未登录模式：不做任何 signIn，直接可用（所有操作走云函数鉴权）
+    boot.classList.add('hidden');
+    loginView.classList.remove('hidden');
+    $('pwd').value = pwd;
+    if (pwd) tryLogin(true);
   }
 
   /* ---------- 登录 ---------- */
@@ -224,7 +217,7 @@
     return call('listBanners').then(function (r) {
       if (!r.ok) { toast(r.msg || '读取失败'); return; }
       list = (r.list || []).map(function (b) {
-        return { id: b._id, url: b.fileID || b.localPath || '', cloud: !!b.fileID,
+        return { id: b._id, url: b.tempUrl || b.fileID || b.localPath || '', cloud: !!b.fileID,
                  link: b.link || '', tab: b.tab === true, enabled: b.enabled !== false };
       });
       render();
@@ -378,13 +371,16 @@
       var f = arr[i++];
       $('hint').textContent = '正在上传 ' + i + ' / ' + arr.length + '：' + f.name;
       compress(f).then(function (blob) {
-        var ext = '.jpg';
-        var cloudPath = 'banners/' + Date.now() + '-' + Math.floor(Math.random() * 100000) + ext;
-        return app.uploadFile({ cloudPath: cloudPath, fileContent: blob }).then(function (up) {
-          return call('addBanner', { fileID: up.fileID });
-        }).then(function (r) {
-          if (!r.ok) toast(r.msg || '保存记录失败');
+        return new Promise(function (resolve, reject) {
+          var fr = new FileReader();
+          fr.onload = function () { resolve(String(fr.result)); };
+          fr.onerror = function () { reject(new Error('读取失败')); };
+          fr.readAsDataURL(blob);
         });
+      }).then(function (dataUrl) {
+        return call('addBannerBase64', { dataBase64: dataUrl });
+      }).then(function (r) {
+        if (!r.ok) toast(r.msg || '保存失败');
       }).catch(function (e) {
         toast('上传失败：' + ((e && (e.message || e.errMsg)) || '未知错误'));
       }).then(function () {
